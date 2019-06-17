@@ -25,7 +25,7 @@ public class Dot implements Cloneable {
 
     public static int DOT_SIZE = 8;
     public static final int MAX_VELOCITY = 10;
-    private double max_vel_scaling = Math.sqrt(MAX_VELOCITY*MAX_VELOCITY*2);
+    private double max_vel_scaling = Math.sqrt(2*MAX_VELOCITY*MAX_VELOCITY);
 
     private int x = 0;
     private int y = 1;
