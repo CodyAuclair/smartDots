@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -27,6 +28,8 @@ public class DotEngine extends SurfaceView implements Runnable {
     public int size = 1000;
     private Dot[] dotArray;
     public Dot[] newDots = new Dot[numDots];
+    int survivorCount = 0;
+    int generationCount = -1;
 
     public static int width;
     public static int height;
@@ -111,14 +114,21 @@ public class DotEngine extends SurfaceView implements Runnable {
         size = value;
     }
 
+
+
     public void startSimulation() {
         isRunning = false;
-        if(dotArray == null) {
-            dotArray = new Dot[numDots];
-        }
-        for(int i = 0 ; i < numDots ; i++) {
-            dotArray[i] = new Dot();
-        }
+        generationCount++;
+        dotArray = readyNextGen(dotArray);
+        Log.i("DOT ENGINE", "Current gen: " + generationCount);
+
+//        if(dotArray == null) {
+//            dotArray = new Dot[numDots];
+//        }
+//        for(int i = 0 ; i < numDots ; i++) {
+//            dotArray[i] = new Dot();
+//        }
+//
 
         if(goal == null) {
             goal = new Goal();
@@ -209,6 +219,54 @@ public class DotEngine extends SurfaceView implements Runnable {
         double posy = goal.getLocation()[1];
         int size = goal.getGoalSize();
         return dotArray[i].isAtGoal(goal);
+    }
+
+    public Dot[] getSurvivors(Dot[] lastGeneration) {
+        survivorCount = 0;
+        for(int i = 0; i < numDots; i++) {
+            if(lastGeneration[i].isSurvived()) {
+                survivorCount++;
+            }
+        }
+
+        Dot[] survivors;
+        survivors = new Dot[survivorCount];
+
+        int j = 0;
+        for(int i = 0; i < numDots; i++) {
+            if(lastGeneration[i].isSurvived()) {
+                survivors[j] = lastGeneration[i];
+                j++;
+            }
+        }
+
+        return survivors;
+    }
+
+    public Dot[] readyNextGen(@Nullable Dot[] lastGeneration) {
+        Dot[] nextGen;
+        if (lastGeneration == null) {
+            nextGen = new Dot[numDots];
+            for(int i = 0; i < numDots; i++) {
+                nextGen[i] = new Dot();
+            }
+        } else {
+            Dot[] lastGen = getSurvivors(lastGeneration);
+            nextGen = new Dot[numDots];
+            int shortestStep = Dot.DEFAULT_STEP_COUNT;
+            System.arraycopy(lastGen, 0, nextGen, 0, survivorCount);
+            for(int i = 0; i < survivorCount; i++) {
+                if(nextGen[i].brain.step < shortestStep) {
+                    shortestStep = nextGen[i].brain.step;
+                }
+                nextGen[i].resetDot();
+            }
+            for(int i = survivorCount; i < numDots; i++) {
+                nextGen[i] = new Dot(shortestStep);
+            }
+        }
+
+        return nextGen;
     }
 
 }

@@ -1,12 +1,11 @@
 package com.smartDots;
 
 import android.graphics.Paint;
-import android.graphics.RectF;
 
-import java.lang.reflect.Array;
-import java.util.Vector;
 import android.graphics.Canvas;
-import android.util.Log;
+
+import static com.smartDots.DotEngine.height;
+import static com.smartDots.DotEngine.width;
 
 
 /***
@@ -24,7 +23,8 @@ public class Dot implements Cloneable {
 
     public static int DOT_SIZE = 8;
     public static final int MAX_VELOCITY = 10;
-    private double max_vel_scaling = Math.sqrt(2*MAX_VELOCITY*MAX_VELOCITY);
+    public static final int DEFAULT_STEP_COUNT = 1000;
+    private static final double MAX_VELOCITY_SCALING = Math.sqrt(2*MAX_VELOCITY*MAX_VELOCITY);
     private int x = 0;
     private int y = 1;
 
@@ -32,37 +32,21 @@ public class Dot implements Cloneable {
      * Constructor for the Dot.
      */
     Dot() {
-        brain = new Brain(1000);
-
+        brain = new Brain(DEFAULT_STEP_COUNT);
         pos = new double[2];
-        pos[x] = DotEngine.width / 2.0;
-        pos[y] = DotEngine.height / 2.0;
-
         vel = new double[2];
-        vel[x] = 0.0;
-        vel[y] = 0.0;
-
         acc = new double[2];
-        acc[x] = 0.0;
-        acc[y] = 0.0;
 
-        goal = new double[2];
+        resetDot();
     }
 
     Dot(int size) {
         brain = new Brain(size);
-
         pos = new double[2];
-        pos[x] = 0.0;
-        pos[y] = 0.0;
-
         vel = new double[2];
-        vel[x] = 0.0;
-        vel[y] = 0.0;
-
         acc = new double[2];
-        acc[x] = 0.0;
-        acc[y] = 0.0;
+
+        resetDot();
     }
 
     public Object clone() throws CloneNotSupportedException {
@@ -106,8 +90,8 @@ public class Dot implements Cloneable {
             double magnitude = Math.hypot(vel[x],vel[y]);
             if (magnitude > MAX_VELOCITY){
 //                Log.i("VEL_OVER_BEFORE", "Vel x: " + vel[x] + "\t Vel y: " + vel[y]);
-                vel[x] = vel[x] * max_vel_scaling / magnitude;
-                vel[y] = vel[y] * max_vel_scaling / magnitude;
+                vel[x] = vel[x] * MAX_VELOCITY_SCALING / magnitude;
+                vel[y] = vel[y] * MAX_VELOCITY_SCALING / magnitude;
 //                Log.i("VEL_OVER_AFTER", "Vel x: " + vel[x] + "\t Vel y: " + vel[y]);
             }
 
@@ -119,7 +103,7 @@ public class Dot implements Cloneable {
     }
 
     boolean isDead() {
-        if(pos[x] <= (2*DOT_SIZE) || pos[x] >= (DotEngine.width - 2*DOT_SIZE) ||
+        if(pos[x] <= (2*DOT_SIZE) || pos[x] >= (width - 2*DOT_SIZE) ||
                 pos[y] <= (2*DOT_SIZE) || pos[y] >= (DotEngine.height - 2*DOT_SIZE)) {
             dead = true;
         }
@@ -141,6 +125,23 @@ public class Dot implements Cloneable {
 
     boolean isSurvived() {
         return survived;
+    }
+
+    void resetDot() {
+        pos[x] = (1.0 * width) / 2;
+        pos[y] = (1.0 * height) / 2;
+
+        vel[x] = 0.0;
+        vel[y] = 0.0;
+
+        acc[x] = 0.0;
+        acc[y] = 0.0;
+
+        brain.step = 0;
+
+        dead = false;
+        survived = false;
+        atGoal = false;
     }
 
 
