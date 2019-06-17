@@ -12,6 +12,7 @@ import android.util.Log;
 /***
  * Class that handles our Dot object.
  */
+// Hello World
 public class Dot implements Cloneable {
     private double[] pos;
     private double[] vel;
