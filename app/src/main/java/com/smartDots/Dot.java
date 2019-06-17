@@ -25,6 +25,7 @@ public class Dot implements Cloneable {
 
     public static int DOT_SIZE = 8;
     public static final int MAX_VELOCITY = 10;
+    private double max_vel_scaling = Math.sqrt(MAX_VELOCITY*MAX_VELOCITY*2);
 
     private int x = 0;
     private int y = 1;
@@ -103,20 +104,13 @@ public class Dot implements Cloneable {
 //        Log.i("VEL_X_BEF", "Vel x before: " + vel[x]);
             vel[x] += acc[x];
 //        Log.i("VEL_X_AFT", "Vel x after: " + vel[x]);
-            if(vel[x] > MAX_VELOCITY) {
-                vel[x] = MAX_VELOCITY;
-            }
-            if(vel[x] < -MAX_VELOCITY) {
-                vel[x] = -MAX_VELOCITY;
-            }
-//        Log.i("VEL_Y_BEF", "Vel y before: " + vel[y]);
             vel[y] += acc[y];
-//        Log.i("VEL_Y_AFT", "Vel y after: " + vel[y]);
-            if(vel[y] > MAX_VELOCITY) {
-                vel[y] = MAX_VELOCITY;
-            }
-            if(vel[y] < -MAX_VELOCITY) {
-                vel[y] = -MAX_VELOCITY;
+            double magnitude = Math.hypot(vel[x],vel[y]);
+            if (magnitude > MAX_VELOCITY){
+//                Log.i("VEL_OVER_BEFORE", "Vel x: " + vel[x] + "\t Vel y: " + vel[y]);
+                vel[x] = vel[x] * max_vel_scaling / magnitude;
+                vel[y] = vel[y] * max_vel_scaling / magnitude;
+//                Log.i("VEL_OVER_AFTER", "Vel x: " + vel[x] + "\t Vel y: " + vel[y]);
             }
 
             pos[x] += vel[x];
