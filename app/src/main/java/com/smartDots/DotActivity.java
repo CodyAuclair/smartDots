@@ -3,11 +3,7 @@ package com.smartDots;
 import android.app.Activity;
 import android.graphics.Point;
 import android.os.Bundle;
-import android.view.ContextMenu;
 import android.view.Display;
-import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
 
 public class DotActivity extends Activity {
     DotEngine dotEngine;
@@ -24,26 +20,8 @@ public class DotActivity extends Activity {
         dotEngine = new DotEngine(this, size);
 
         setContentView(dotEngine);
-//        registerForContextMenu(dotEngine);
 
     }
-
-    /*@Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        super.onCreateContextMenu(menu, v, menuInfo);
-        menu.add(0, v.getId(), 0, "Settings");
-    }
-
-    @Override
-    public boolean onContextItemSelected(MenuItem item) {
-        if (item.getTitle() == "Settings") {
-
-        } else {
-            return false;
-        }
-        return true;
-    }*/
-
 
     @Override
     protected void onResume() {
