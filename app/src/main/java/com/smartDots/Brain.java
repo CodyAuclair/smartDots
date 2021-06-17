@@ -4,27 +4,32 @@ import java.util.Random;
 
 import static java.lang.Math.PI;
 
-/***
- * Creates an array of random angles from 0 to 2*PI
- * Each element in the array is a single angle.
- * Each angle will be applied to a single dot's velocity and acceleration vectors.
- * This means that every Dot will have a single Brain, and the Brain is how many instructions the
- * dot follows.
+/**
+ * Every Dot will have a single Brain, and the Brain is the set of instructions the dot follows
+ * throughout its life.
  */
 public class Brain {
 
-    double[] directionsForce;
-    double[] directionsAngle;
-    public int step = 0;
+    final double[] directionsForce;
+    final double[] directionsAngle;
+    public int step;
 
-    int MAX_FORCE_PER_STEP = 10;
+    final static int MAX_FORCE_PER_STEP = 10;
 
-    Brain(int size) {
-        directionsForce = new double[size];
-        directionsAngle = new double[size];
+    /**
+     * Default constructor. Sets up our arrays to hold the moves that a dot will make.
+     * @param maxStepCount The maximum number of moves a dot can make.
+     */
+    Brain(int maxStepCount) {
+        directionsForce = new double[maxStepCount];
+        directionsAngle = new double[maxStepCount];
+        step = 0;
         randomize();
     }
 
+    /**
+     * Randomizes the force to apply and the angle to apply that force at for every step of journey.
+     */
     void randomize() {
         for(int i = 0 ; i < directionsForce.length ; i++) {
             Random rF = new Random();
@@ -34,7 +39,6 @@ public class Brain {
             Random rA = new Random();
             double randomAngle = 2 * PI * rA.nextDouble();
             directionsAngle[i] = randomAngle;
-
         }
     }
 
