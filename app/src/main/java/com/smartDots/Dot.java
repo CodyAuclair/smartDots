@@ -1,18 +1,16 @@
 package com.smartDots;
 
 import android.graphics.Paint;
-import android.graphics.RectF;
 
-import java.lang.reflect.Array;
-import java.util.Vector;
 import android.graphics.Canvas;
-import android.util.Log;
+
+import static com.smartDots.DotEngine.height;
+import static com.smartDots.DotEngine.width;
 
 
 /***
  * Class that handles our Dot object.
  */
-// Hello World
 public class Dot implements Cloneable {
     private double[] pos;
     private double[] vel;
@@ -20,13 +18,13 @@ public class Dot implements Cloneable {
     private double[] goal;
     public Brain brain;
     private boolean dead = false;
-    private boolean survived = false;
+    private boolean livedButDidntMakeItToTheGoal = false;
     private boolean atGoal = false;
 
     public static int DOT_SIZE = 8;
     public static final int MAX_VELOCITY = 10;
-    private double max_vel_scaling = Math.sqrt(2*MAX_VELOCITY*MAX_VELOCITY);
-
+    public static final int DEFAULT_STEP_COUNT = 200;
+    private static final double MAX_VELOCITY_SCALING = Math.sqrt(2*MAX_VELOCITY*MAX_VELOCITY);
     private int x = 0;
     private int y = 1;
 
@@ -34,37 +32,21 @@ public class Dot implements Cloneable {
      * Constructor for the Dot.
      */
     Dot() {
-        brain = new Brain(1000);
-
+        brain = new Brain(DEFAULT_STEP_COUNT);
         pos = new double[2];
-        pos[x] = DotEngine.width / 2.0;
-        pos[y] = DotEngine.height / 2.0;
-
         vel = new double[2];
-        vel[x] = 0.0;
-        vel[y] = 0.0;
-
         acc = new double[2];
-        acc[x] = 0.0;
-        acc[y] = 0.0;
 
-        goal = new double[2];
+        resetDot(DEFAULT_STEP_COUNT);
     }
 
     Dot(int size) {
         brain = new Brain(size);
-
         pos = new double[2];
-        pos[x] = 0.0;
-        pos[y] = 0.0;
-
         vel = new double[2];
-        vel[x] = 0.0;
-        vel[y] = 0.0;
-
         acc = new double[2];
-        acc[x] = 0.0;
-        acc[y] = 0.0;
+
+        resetDot(size);
     }
 
     public Object clone() throws CloneNotSupportedException {
@@ -83,22 +65,14 @@ public class Dot implements Cloneable {
             // Here, we're setting the acceleration generated from the Brain class.
             if (brain.directionsForce.length > brain.step) {
                 acc[x] = brain.directionsForce[brain.step] * Math.cos(brain.directionsAngle[brain.step]);
-//              Log.i("ACC_X", "Acc_X is: " + acc[x]);
-//              Log.i("FORCE_X", "Force X is: " + brain.directionsForce[brain.step]);
-//              Log.i("COMPONENT_X", "Component X is: " + brain.directionsAngle[brain.step]);
-//              Log.i("COS_X", "COS value is: " + Math.cos(brain.directionsAngle[brain.step]));
                 acc[y] = brain.directionsForce[brain.step] * Math.sin(brain.directionsAngle[brain.step]);
-//              Log.i("ACC_Y", "Acc_Y is: " + acc[y]);
-//              Log.i("FORCE_Y", "Force Y is: " + brain.directionsForce[brain.step]);
-//              Log.i("COMPONENT_Y", "Component Y is: " + brain.directionsAngle[brain.step]);
-//              Log.i("SIN_X", "SIN value is: " + Math.sin(brain.directionsAngle[brain.step]));
                 brain.step++;
             } else {
                 acc[x] = 0;
                 acc[y] = 0;
                 vel[x] = 0;
                 vel[y] = 0;
-                survived = true;
+                livedButDidntMakeItToTheGoal = true;
             }
 
 //        Log.i("VEL_X_BEF", "Vel x before: " + vel[x]);
@@ -108,20 +82,26 @@ public class Dot implements Cloneable {
             double magnitude = Math.hypot(vel[x],vel[y]);
             if (magnitude > MAX_VELOCITY){
 //                Log.i("VEL_OVER_BEFORE", "Vel x: " + vel[x] + "\t Vel y: " + vel[y]);
-                vel[x] = vel[x] * max_vel_scaling / magnitude;
-                vel[y] = vel[y] * max_vel_scaling / magnitude;
+                vel[x] = vel[x] * MAX_VELOCITY_SCALING / magnitude;
+                vel[y] = vel[y] * MAX_VELOCITY_SCALING / magnitude;
 //                Log.i("VEL_OVER_AFTER", "Vel x: " + vel[x] + "\t Vel y: " + vel[y]);
             }
 
             pos[x] += vel[x];
             pos[y] += vel[y];
             isDead();
+        } else {
+            acc[x] = 0;
+            acc[y] = 0;
+            vel[x] = 0;
+            vel[y] = 0;
+            livedButDidntMakeItToTheGoal = true;
         }
 
     }
 
     boolean isDead() {
-        if(pos[x] <= (2*DOT_SIZE) || pos[x] >= (DotEngine.width - 2*DOT_SIZE) ||
+        if(pos[x] <= (2*DOT_SIZE) || pos[x] >= (width - 2*DOT_SIZE) ||
                 pos[y] <= (2*DOT_SIZE) || pos[y] >= (DotEngine.height - 2*DOT_SIZE)) {
             dead = true;
         }
@@ -134,15 +114,40 @@ public class Dot implements Cloneable {
         double sizeOfGoal = goal.getGoalSize();
         double distanceBetweenCenters = Math.sqrt( Math.pow((posGoalX - pos[x]), 2) + Math.pow((posGoalY - pos[y]), 2));
         if(distanceBetweenCenters < (sizeOfGoal + DOT_SIZE)) {
-            survived = true;
+//            livedButDidntMakeItToTheGoal = true;
             atGoal = true;
             return true;
         }
         return false;
     }
 
-    boolean isSurvived() {
-        return survived;
+    boolean isLivedButDidntMakeItToTheGoal() {
+        return livedButDidntMakeItToTheGoal;
+    }
+
+    void resetDot(int newBrainSize) {
+        pos[x] = (1.0 * width) / 2;
+        pos[y] = (1.0 * height) / 2;
+
+        vel[x] = 0.0;
+        vel[y] = 0.0;
+
+        acc[x] = 0.0;
+        acc[y] = 0.0;
+
+        brain.step = 0;
+        // When we reset a dot, we want it to have a new brain with a shorter time to reach.
+        // Otherwise our survivors will always survive and always get their full survival time.
+        Brain newBrain = new Brain(newBrainSize);
+//        if (newBrainSize >= 0) {
+//            System.arraycopy(brain.directionsForce, 0, newBrain.directionsForce, 0, newBrainSize);
+//            System.arraycopy(brain.directionsAngle, 0, newBrain.directionsAngle, 0, newBrainSize);
+//        }
+        brain = newBrain;
+
+        dead = false;
+        livedButDidntMakeItToTheGoal = false;
+        atGoal = false;
     }
 
 

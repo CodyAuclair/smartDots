@@ -5,15 +5,11 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.widget.Toast;
-
-import static android.view.MotionEvent.ACTION_UP;
-import static android.view.MotionEvent.actionToString;
 
 public class DotEngine extends SurfaceView implements Runnable {
 
@@ -23,10 +19,12 @@ public class DotEngine extends SurfaceView implements Runnable {
 
     public static Goal goal;
 
-    public static int numDots = 500;
-    public int size = 1000;
+    public static int numDots = 200;
     private Dot[] dotArray;
     public Dot[] newDots = new Dot[numDots];
+    int succeederCount = 0;
+    int generationCount = -1;
+    int smallestNumSteps;
 
     public static int width;
     public static int height;
@@ -52,6 +50,8 @@ public class DotEngine extends SurfaceView implements Runnable {
 
         surfaceHolder = getHolder();
         paint = new Paint();
+
+        smallestNumSteps = Dot.DEFAULT_STEP_COUNT;
 
         View view = getRootView();
         view.setOnClickListener(new View.OnClickListener() {
@@ -103,22 +103,11 @@ public class DotEngine extends SurfaceView implements Runnable {
         thread.start();
     }
 
-    public int getSize() {
-        return size;
-    }
-
-    public void setSize(int value) {
-        size = value;
-    }
-
     public void startSimulation() {
         isRunning = false;
-        if(dotArray == null) {
-            dotArray = new Dot[numDots];
-        }
-        for(int i = 0 ; i < numDots ; i++) {
-            dotArray[i] = new Dot();
-        }
+        generationCount++;
+        dotArray = readyNextGen(dotArray);
+        Log.i("DOT ENGINE", "Current gen: " + generationCount);
 
         if(goal == null) {
             goal = new Goal();
@@ -156,9 +145,10 @@ public class DotEngine extends SurfaceView implements Runnable {
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(Color.argb(255, 0, 0, 0));
             for(int i = 0 ; i < numDots ; i++) {
-                if(!dotArray[i].isDead() && !dotArray[i].isSurvived() && !dotArray[i].isAtGoal(goal)) {
+                if(!dotArray[i].isDead() && !dotArray[i].isLivedButDidntMakeItToTheGoal()
+                        && !dotArray[i].isAtGoal(goal) && dotArray[i].brain.step <= Dot.DEFAULT_STEP_COUNT) {
                     dotArray[i].show(canvas, paint);
-                    Log.i("Draw", "Drawing dot " + i + " for time # " + dotArray[i].brain.step);
+//                    Log.i("Draw", "Drawing dot " + i + " for time # " + dotArray[i].brain.step);
                 }
             }
 
@@ -166,7 +156,7 @@ public class DotEngine extends SurfaceView implements Runnable {
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(Color.argb(255, 0, 0, 255));
             for(int i = 0; i < numDots ; i++) {
-                if(dotArray[i].isSurvived()) {
+                if(dotArray[i].isLivedButDidntMakeItToTheGoal()) {
                     dotArray[i].show(canvas, paint);
                 }
             }
@@ -209,6 +199,91 @@ public class DotEngine extends SurfaceView implements Runnable {
         double posy = goal.getLocation()[1];
         int size = goal.getGoalSize();
         return dotArray[i].isAtGoal(goal);
+    }
+
+    public Dot[] getSucceeders(Dot[] lastGeneration) {
+        succeederCount = 0;
+        for(int i = 0; i < numDots; i++) {
+            if(lastGeneration[i].isAtGoal(goal)) {
+                succeederCount++;
+            }
+        }
+
+        Dot[] succeeders = new Dot[succeederCount];
+
+        int a = 0;
+        for(int i = 0; i < numDots; i++) {
+            if(lastGeneration[i].isAtGoal(goal)) {
+                succeeders[a] = lastGeneration[i];
+                a++;
+            }
+        }
+
+        return succeeders;
+    }
+
+    public Dot[] readyNextGen(@Nullable Dot[] lastGeneration) {
+        Dot[] nextGen;
+        if (lastGeneration == null) {
+            nextGen = new Dot[numDots];
+            for(int i = 0; i < numDots; i++) {
+                nextGen[i] = new Dot();
+            }
+        } else {
+            Dot[] lastGenSucceeders = getSucceeders(lastGeneration);
+            nextGen = new Dot[numDots];
+            Log.d("Succeeders", "Last generation had " + succeederCount + " dots reach goal");
+//            int shortestStep = Dot.DEFAULT_STEP_COUNT;
+            System.arraycopy(lastGenSucceeders, 0, nextGen, 0, succeederCount);
+            int fewestSteps = getFewestNumberOfStepsForSuccessFromGeneration(lastGenSucceeders);
+            for(int i = 0; i < succeederCount; i++) {
+                nextGen[i].resetDot(fewestSteps);
+            }
+            for(int i = succeederCount; i < numDots; i++) {
+                nextGen[i] = new Dot(fewestSteps);
+            }
+        }
+
+        return nextGen;
+    }
+
+    private int getFewestNumberOfStepsForSuccessFromGeneration(Dot[] generation) {
+        int lastGenFewestStepsToFinish = smallestNumSteps;
+        for(int i = 0; i < succeederCount; i++) {
+            if(generation[i].isAtGoal(goal) &&
+                    generation[i].brain.step < lastGenFewestStepsToFinish) {
+                lastGenFewestStepsToFinish = generation[i].brain.step;
+            }
+        }
+        if(lastGenFewestStepsToFinish < smallestNumSteps) {
+            smallestNumSteps = lastGenFewestStepsToFinish;
+            Log.d("getFewest", "This generation beat the best score and only took " +
+                    smallestNumSteps + " to reach the goal.");
+        } else if(lastGenFewestStepsToFinish > smallestNumSteps) {
+            Log.d("getFewest", "This generation did not out-perform the best score of " +
+                    smallestNumSteps);
+        } else {
+            Log.d("getFewest", "The best performer of this generation tied with the " +
+                    "best score of " + smallestNumSteps + " to reach the goal.");
+        }
+
+        return smallestNumSteps;
+    }
+
+    private int getMostNumberOfStepsForSuccessFromGeneration(Dot[] generation) {
+        int lastGenMostStepsToFinish = -1;
+        for(int i = 0; i < succeederCount; i++) {
+            if(generation[i].isAtGoal(goal) &&
+                    generation[i].brain.step > lastGenMostStepsToFinish) {
+                lastGenMostStepsToFinish = generation[i].brain.step;
+            }
+        }
+        if(lastGenMostStepsToFinish == -1) {
+            lastGenMostStepsToFinish = Dot.DEFAULT_STEP_COUNT;
+        }
+        Log.d("LastGenMostSteps", "Last generation's weakest link took " + lastGenMostStepsToFinish
+         + " to reach the goal.");
+        return lastGenMostStepsToFinish;
     }
 
 }

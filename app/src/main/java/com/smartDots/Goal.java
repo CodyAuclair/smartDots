@@ -11,7 +11,7 @@ public class Goal {
     private int x = 0;
     private int y = 1;
 
-    private final int GOAL_SIZE = 10;
+    private final int GOAL_SIZE = 100;
 
     Goal() {
         pos = new double[2];
